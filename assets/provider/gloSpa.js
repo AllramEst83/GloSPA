@@ -120,6 +120,16 @@ const GloSPA = (() => {
     
     const proxy = createNestedProxy(state);
     proxy.__bindTemplates = bindTemplates;
+    proxy.__set = (path, value) => {
+      setNestedValue(state, path, value);
+      // Trigger reactivity by updating the proxy
+      const keys = path.split('.');
+      let current = proxy;
+      for (let i = 0; i < keys.length - 1; i++) {
+        current = current[keys[i]];
+      }
+      current[keys[keys.length - 1]] = value;
+    };
     return proxy;
   }
 
