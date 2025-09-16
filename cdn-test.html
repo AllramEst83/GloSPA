@@ -33,7 +33,7 @@
 </head>
 <body>
     <h1>GloSPA CDN Test</h1>
-    <p>Testing GloSPA library loaded from local file (simulating CDN)</p>
+    <p>Testing GloSPA library loaded from CDN</p>
     
     <div id="app">
         <h2>Reactive State Test</h2>
@@ -58,7 +58,7 @@
 
     <script type="module">
         // Import GloSPA from local file (simulating CDN)
-        import GloSPA from './assets/provider/gloSpa.js';
+        import GloSPA from 'https://cdn.jsdelivr.net/npm/glospa@latest/assets/provider/gloSpa.min.js';
         
         // Make GloSPA globally available for onclick handlers
         window.GloSPA = GloSPA;
