@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GloSPA CDN Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #007cba;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .counter {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>GloSPA CDN Test</h1>
+    <p>Testing GloSPA library loaded from local file (simulating CDN)</p>
+    
+    <div id="app">
+        <h2>Reactive State Test</h2>
+        <p>Message: {{ message }}</p>
+        <p>Count: {{ count }}</p>
+        <button onclick="store.count++">Increment</button>
+        <button onclick="store.message = 'Updated at ' + new Date().toLocaleTimeString()">Update Message</button>
+        
+        <h2>Component Test</h2>
+        <div data-component="counter" class="counter"></div>
+        
+        <h2>Event Bus Test</h2>
+        <button onclick="GloSPA.bus.emit('test-event', 'Hello from event!')">Send Event</button>
+        <p>Last event: {{ lastEvent }}</p>
+        
+        <h2>Nested State Test</h2>
+        <p>User Name: {{ user.name }}</p>
+        <p>User Age: {{ user.age }}</p>
+        <button onclick="store.user.age++">Increase Age</button>
+        <button onclick="store.user.name = 'Updated User'">Update Name</button>
+    </div>
+
+    <script type="module">
+        // Import GloSPA from local file (simulating CDN)
+        import GloSPA from './assets/provider/gloSpa.js';
+        
+        // Make GloSPA globally available for onclick handlers
+        window.GloSPA = GloSPA;
+        
+        // Create reactive state
+        const store = GloSPA.createReactive({
+            message: "Hello from GloSPA!",
+            count: 0,
+            lastEvent: "No events yet",
+            user: {
+                name: "John Doe",
+                age: 30
+            }
+        });
+        
+        // Make store globally available for onclick handlers
+        window.store = store;
+        
+        // Register a counter component
+        GloSPA.registerComponent('counter', () => ({
+            template: `
+                <h3>Counter Component</h3>
+                <p>Component Count: {{ componentCount }}</p>
+                <button onclick="store.componentCount++">Component Increment</button>
+            `,
+            init(store, bus, el) {
+                console.log('Counter component initialized');
+                if (!store.componentCount) {
+                    store.componentCount = 0;
+                }
+            }
+        }));
+        
+        // Bind templates after DOM is ready
+        store.__bindTemplates();
+        
+        // Render components
+        const renderComponents = (root, store, bus) => {
+            root.querySelectorAll("[data-component]").forEach((el) => {
+                const name = el.getAttribute("data-component");
+                const components = { counter: () => GloSPA.registerComponent };
+                // This is a simplified version - in the real implementation this would be handled by the framework
+            });
+        };
+        
+        // Listen to event bus
+        GloSPA.bus.on('test-event', (e) => {
+            store.lastEvent = e.detail;
+            console.log('Received event:', e.detail);
+        });
+        
+        console.log('GloSPA CDN test initialized successfully!');
+        console.log('Store:', store);
+        console.log('GloSPA:', GloSPA);
+    </script>
+</body>
+</html>

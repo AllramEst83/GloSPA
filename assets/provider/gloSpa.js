@@ -303,4 +303,17 @@ const GloSPA = (() => {
   };
 })();
 
+// Support multiple module systems
+if (typeof module !== 'undefined' && module.exports) {
+  // CommonJS
+  module.exports = GloSPA;
+} else if (typeof define === 'function' && define.amd) {
+  // AMD
+  define([], function() { return GloSPA; });
+} else {
+  // Browser globals
+  window.GloSPA = GloSPA;
+}
+
+// ES Module export (for modern bundlers and CDN)
 export default GloSPA;

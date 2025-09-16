@@ -1,0 +1,42 @@
+{
+  "name": "glospa",
+  "version": "1.0.0",
+  "description": "A lightweight Single Page Application (SPA) framework - Glorified Single Page Application",
+  "main": "assets/provider/gloSpa.js",
+  "module": "assets/provider/gloSpa.js",
+  "exports": {
+    ".": {
+      "import": "./assets/provider/gloSpa.js",
+      "require": "./assets/provider/gloSpa.js"
+    }
+  },
+  "files": [
+    "assets/provider/gloSpa.js",
+    "assets/provider/gloSpa.min.js",
+    "README.md"
+  ],
+  "keywords": [
+    "spa",
+    "framework",
+    "javascript",
+    "frontend",
+    "reactive",
+    "router",
+    "components",
+    "lightweight",
+    "vanilla-js"
+  ],
+  "author": "AllramEst83",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AllramEst83/GloSPA.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AllramEst83/GloSPA/issues"
+  },
+  "homepage": "https://github.com/AllramEst83/GloSPA#readme",
+  "type": "module",
+  "jsdelivr": "assets/provider/gloSpa.min.js",
+  "unpkg": "assets/provider/gloSpa.min.js"
+}
