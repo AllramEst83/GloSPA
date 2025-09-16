@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nested Object Demo - GloSPA</title>
+    <link rel="stylesheet" href="./assets/css/site.css">
+    <style>
+        .demo-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        .demo-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .object-viewer {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 1rem 0;
+            border-left: 4px solid #007bff;
+        }
+        .nested-level-1 { border-left-color: #007bff; }
+        .nested-level-2 { border-left-color: #28a745; }
+        .nested-level-3 { border-left-color: #ffc107; }
+        .nested-level-4 { border-left-color: #dc3545; }
+        
+        .demo-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .demo-buttons button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9em;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        
+        .demo-buttons button:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+        
+        .live-updates {
+            background: #e9ecef;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .update-log {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 1rem 0;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <header>
+            <h1>Comprehensive Nested Object Demo</h1>
+            <p>Demonstrates deep reactivity and complex object structures in GloSPA</p>
+        </header>
+        
+        <div class="demo-grid">
+            <!-- Company Object Demo -->
+            <div class="demo-section">
+                <h2>🏢 Company Object (4 Levels Deep)</h2>
+                <div class="object-viewer nested-level-1">
+                    <strong>Company:</strong> {{company.name}}<br>
+                    <strong>Founded:</strong> {{company.founded}}<br>
+                    <strong>CEO:</strong> {{company.leadership.ceo.name}}<br>
+                    <strong>CEO Email:</strong> {{company.leadership.ceo.contact.email}}<br>
+                    <strong>HQ City:</strong> {{company.headquarters.address.city}}<br>
+                    <strong>HQ Country:</strong> {{company.headquarters.address.country}}<br>
+                    <strong>Employee Count:</strong> {{company.stats.employees}}<br>
+                    <strong>Revenue:</strong> ${{company.stats.revenue}}M
+                </div>
+                <div class="demo-buttons">
+                    <button class="btn-primary" id="updateCompanyName">Change Company</button>
+                    <button class="btn-success" id="updateCEO">New CEO</button>
+                    <button class="btn-warning" id="updateHQ">Relocate HQ</button>
+                    <button class="btn-info" id="updateStats">Update Stats</button>
+                </div>
+            </div>
+
+            <!-- User Profile Demo -->
+            <div class="demo-section">
+                <h2>👤 User Profile (3 Levels Deep)</h2>
+                <div class="object-viewer nested-level-2">
+                    <strong>Name:</strong> {{user.personal.name}}<br>
+                    <strong>Email:</strong> {{user.personal.email}}<br>
+                    <strong>Theme:</strong> {{user.preferences.ui.theme}}<br>
+                    <strong>Language:</strong> {{user.preferences.ui.language}}<br>
+                    <strong>Notifications:</strong> {{user.preferences.notifications.email}}<br>
+                    <strong>2FA:</strong> {{user.security.twoFactor.enabled}}<br>
+                    <strong>Last Login:</strong> {{user.security.lastLogin}}
+                </div>
+                <div class="demo-buttons">
+                    <button class="btn-primary" id="updateUserProfile">Change User</button>
+                    <button class="btn-success" id="updatePreferences">Update Prefs</button>
+                    <button class="btn-warning" id="updateSecurity">Security Settings</button>
+                </div>
+            </div>
+
+            <!-- Product Catalog Demo -->
+            <div class="demo-section">
+                <h2>📦 Product Catalog</h2>
+                <div class="object-viewer nested-level-3">
+                    <strong>Product:</strong> {{catalog.featured.name}}<br>
+                    <strong>Price:</strong> ${{catalog.featured.pricing.base}}<br>
+                    <strong>Discount:</strong> {{catalog.featured.pricing.discount}}%<br>
+                    <strong>Final Price:</strong> ${{catalog.featured.pricing.final}}<br>
+                    <strong>Category:</strong> {{catalog.featured.category.main}}<br>
+                    <strong>Subcategory:</strong> {{catalog.featured.category.sub}}<br>
+                    <strong>In Stock:</strong> {{catalog.featured.inventory.available}}<br>
+                    <strong>Warehouse:</strong> {{catalog.featured.inventory.location}}
+                </div>
+                <div class="demo-buttons">
+                    <button class="btn-primary" id="updateProduct">Change Product</button>
+                    <button class="btn-success" id="updatePricing">Update Pricing</button>
+                    <button class="btn-warning" id="updateInventory">Stock Update</button>
+                </div>
+            </div>
+
+            <!-- Application Config Demo -->
+            <div class="demo-section">
+                <h2>⚙️ App Configuration</h2>
+                <div class="object-viewer nested-level-4">
+                    <strong>App Name:</strong> {{config.app.name}}<br>
+                    <strong>Version:</strong> {{config.app.version}}<br>
+                    <strong>Environment:</strong> {{config.environment.type}}<br>
+                    <strong>Debug Mode:</strong> {{config.environment.debug}}<br>
+                    <strong>Database:</strong> {{config.services.database.type}}<br>
+                    <strong>DB Host:</strong> {{config.services.database.host}}<br>
+                    <strong>Cache:</strong> {{config.services.cache.provider}}<br>
+                    <strong>Cache TTL:</strong> {{config.services.cache.ttl}}s
+                </div>
+                <div class="demo-buttons">
+                    <button class="btn-primary" id="updateAppConfig">Update App</button>
+                    <button class="btn-success" id="toggleEnvironment">Toggle Env</button>
+                    <button class="btn-warning" id="updateServices">Update Services</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Updates Section -->
+        <div class="demo-section full-width">
+            <h2>🔄 Live Updates & Dynamic Objects</h2>
+            <div class="live-updates">
+                <h3>Current Timestamp: {{liveData.timestamp}}</h3>
+                <p>Random Value: {{liveData.random}}</p>
+                <p>Update Count: {{liveData.updateCount}}</p>
+                <p>Status: {{liveData.status}}</p>
+            </div>
+            <div class="demo-buttons">
+                <button class="btn-info" id="updateLiveData">Update Live Data</button>
+                <button class="btn-success" id="startAutoUpdate">Start Auto Update</button>
+                <button class="btn-danger" id="stopAutoUpdate">Stop Auto Update</button>
+                <button class="btn-warning" id="addNewSection">Add New Section</button>
+                <button class="btn-primary" id="showAllData">Show All Data</button>
+            </div>
+        </div>
+
+        <!-- Update Log -->
+        <div class="demo-section full-width">
+            <h2>📋 Update Log</h2>
+            <div class="update-log" id="updateLog">
+                <div>Nested object demo initialized...</div>
+            </div>
+            <div class="demo-buttons">
+                <button class="btn-warning" id="clearLog">Clear Log</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import GloSPA from './assets/provider/gloSpa.js';
+
+        // Create complex nested reactive store
+        const store = GloSPA.createReactive({
+            company: {
+                name: "TechCorp Inc.",
+                founded: 2018,
+                leadership: {
+                    ceo: {
+                        name: "Sarah Johnson",
+                        contact: {
+                            email: "sarah@techcorp.com",
+                            phone: "+1-555-0123"
+                        }
+                    }
+                },
+                headquarters: {
+                    address: {
+                        city: "San Francisco",
+                        state: "CA",
+                        country: "USA"
+                    }
+                },
+                stats: {
+                    employees: 1250,
+                    revenue: 125
+                }
+            },
+            user: {
+                personal: {
+                    name: "Alex Rodriguez",
+                    email: "alex@example.com"
+                },
+                preferences: {
+                    ui: {
+                        theme: "dark",
+                        language: "en"
+                    },
+                    notifications: {
+                        email: true,
+                        push: false
+                    }
+                },
+                security: {
+                    twoFactor: {
+                        enabled: true
+                    },
+                    lastLogin: "2025-09-16 14:30"
+                }
+            },
+            catalog: {
+                featured: {
+                    name: "Wireless Headphones",
+                    pricing: {
+                        base: 199,
+                        discount: 15,
+                        final: 169
+                    },
+                    category: {
+                        main: "Electronics",
+                        sub: "Audio"
+                    },
+                    inventory: {
+                        available: 45,
+                        location: "Warehouse A"
+                    }
+                }
+            },
+            config: {
+                app: {
+                    name: "GloSPA Demo",
+                    version: "2.1.0"
+                },
+                environment: {
+                    type: "development",
+                    debug: true
+                },
+                services: {
+                    database: {
+                        type: "PostgreSQL",
+                        host: "localhost:5432"
+                    },
+                    cache: {
+                        provider: "Redis",
+                        ttl: 3600
+                    }
+                }
+            },
+            liveData: {
+                timestamp: new Date().toLocaleString(),
+                random: Math.floor(Math.random() * 1000),
+                updateCount: 0,
+                status: "active"
+            }
+        });
+
+        // Logging function
+        const updateLog = document.getElementById('updateLog');
+        function log(message, data = '') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.createElement('div');
+            logDiv.innerHTML = `<span style="color: #4fd1c7">[${timestamp}]</span> ${message} ${data ? ': ' + JSON.stringify(data) : ''}`;
+            updateLog.appendChild(logDiv);
+            updateLog.scrollTop = updateLog.scrollHeight;
+        }
+
+        // Bind templates
+        store.__bindTemplates(document.body);
+        log('All templates bound successfully');
+
+        // Company controls
+        document.getElementById('updateCompanyName').onclick = () => {
+            const companies = ["TechCorp Inc.", "InnovateLabs", "FutureTech Solutions", "GlobalSoft"];
+            const current = companies.indexOf(store.company.name);
+            const next = (current + 1) % companies.length;
+            store.company.name = companies[next];
+            log('Company name updated', store.company.name);
+        };
+
+        document.getElementById('updateCEO').onclick = () => {
+            const ceos = [
+                { name: "Sarah Johnson", email: "sarah@techcorp.com" },
+                { name: "Michael Chen", email: "michael@techcorp.com" },
+                { name: "Emma Wilson", email: "emma@techcorp.com" },
+                { name: "David Brown", email: "david@techcorp.com" }
+            ];
+            const current = ceos.findIndex(c => c.name === store.company.leadership.ceo.name);
+            const next = (current + 1) % ceos.length;
+            store.company.leadership.ceo.name = ceos[next].name;
+            store.company.leadership.ceo.contact.email = ceos[next].email;
+            log('CEO updated', ceos[next]);
+        };
+
+        document.getElementById('updateHQ').onclick = () => {
+            const locations = [
+                { city: "San Francisco", state: "CA", country: "USA" },
+                { city: "New York", state: "NY", country: "USA" },
+                { city: "London", state: "England", country: "UK" },
+                { city: "Tokyo", state: "Tokyo", country: "Japan" }
+            ];
+            const current = locations.findIndex(l => l.city === store.company.headquarters.address.city);
+            const next = (current + 1) % locations.length;
+            store.company.headquarters.address = locations[next];
+            log('Headquarters relocated', locations[next]);
+        };
+
+        document.getElementById('updateStats').onclick = () => {
+            store.company.stats.employees += Math.floor(Math.random() * 100) + 50;
+            store.company.stats.revenue += Math.floor(Math.random() * 20) + 10;
+            log('Company stats updated', store.company.stats);
+        };
+
+        // User controls
+        document.getElementById('updateUserProfile').onclick = () => {
+            const users = [
+                { name: "Alex Rodriguez", email: "alex@example.com" },
+                { name: "Jessica Smith", email: "jessica@example.com" },
+                { name: "Marcus Johnson", email: "marcus@example.com" },
+                { name: "Lisa Wang", email: "lisa@example.com" }
+            ];
+            const current = users.findIndex(u => u.name === store.user.personal.name);
+            const next = (current + 1) % users.length;
+            store.user.personal = users[next];
+            log('User profile updated', users[next]);
+        };
+
+        document.getElementById('updatePreferences').onclick = () => {
+            const themes = ["dark", "light", "auto"];
+            const languages = ["en", "es", "fr", "de"];
+            
+            const currentTheme = themes.indexOf(store.user.preferences.ui.theme);
+            const currentLang = languages.indexOf(store.user.preferences.ui.language);
+            
+            store.user.preferences.ui.theme = themes[(currentTheme + 1) % themes.length];
+            store.user.preferences.ui.language = languages[(currentLang + 1) % languages.length];
+            store.user.preferences.notifications.email = !store.user.preferences.notifications.email;
+            
+            log('User preferences updated', store.user.preferences);
+        };
+
+        document.getElementById('updateSecurity').onclick = () => {
+            store.user.security.twoFactor.enabled = !store.user.security.twoFactor.enabled;
+            store.user.security.lastLogin = new Date().toLocaleString();
+            log('Security settings updated', store.user.security);
+        };
+
+        // Product controls
+        document.getElementById('updateProduct').onclick = () => {
+            const products = [
+                { name: "Wireless Headphones", category: { main: "Electronics", sub: "Audio" } },
+                { name: "Smart Watch", category: { main: "Electronics", sub: "Wearables" } },
+                { name: "Laptop Stand", category: { main: "Accessories", sub: "Desk" } },
+                { name: "Bluetooth Speaker", category: { main: "Electronics", sub: "Audio" } }
+            ];
+            const current = products.findIndex(p => p.name === store.catalog.featured.name);
+            const next = (current + 1) % products.length;
+            store.catalog.featured.name = products[next].name;
+            store.catalog.featured.category = products[next].category;
+            log('Product updated', products[next]);
+        };
+
+        document.getElementById('updatePricing').onclick = () => {
+            const basePrice = Math.floor(Math.random() * 300) + 100;
+            const discount = Math.floor(Math.random() * 30) + 5;
+            const finalPrice = Math.floor(basePrice * (1 - discount / 100));
+            
+            store.catalog.featured.pricing.base = basePrice;
+            store.catalog.featured.pricing.discount = discount;
+            store.catalog.featured.pricing.final = finalPrice;
+            
+            log('Pricing updated', store.catalog.featured.pricing);
+        };
+
+        document.getElementById('updateInventory').onclick = () => {
+            const warehouses = ["Warehouse A", "Warehouse B", "Warehouse C", "Distribution Center"];
+            const currentWarehouse = warehouses.indexOf(store.catalog.featured.inventory.location);
+            const nextWarehouse = (currentWarehouse + 1) % warehouses.length;
+            
+            store.catalog.featured.inventory.available = Math.floor(Math.random() * 100) + 10;
+            store.catalog.featured.inventory.location = warehouses[nextWarehouse];
+            
+            log('Inventory updated', store.catalog.featured.inventory);
+        };
+
+        // Config controls
+        document.getElementById('updateAppConfig').onclick = () => {
+            const versions = ["2.1.0", "2.1.1", "2.2.0", "3.0.0"];
+            const names = ["GloSPA Demo", "Reactive Framework", "Nested Object Test", "SPA Builder"];
+            
+            const currentVersion = versions.indexOf(store.config.app.version);
+            const currentName = names.indexOf(store.config.app.name);
+            
+            store.config.app.version = versions[(currentVersion + 1) % versions.length];
+            store.config.app.name = names[(currentName + 1) % names.length];
+            
+            log('App config updated', store.config.app);
+        };
+
+        document.getElementById('toggleEnvironment').onclick = () => {
+            const envs = ["development", "staging", "production"];
+            const current = envs.indexOf(store.config.environment.type);
+            const next = (current + 1) % envs.length;
+            
+            store.config.environment.type = envs[next];
+            store.config.environment.debug = envs[next] === "development";
+            
+            log('Environment toggled', store.config.environment);
+        };
+
+        document.getElementById('updateServices').onclick = () => {
+            const databases = [
+                { type: "PostgreSQL", host: "localhost:5432" },
+                { type: "MySQL", host: "localhost:3306" },
+                { type: "MongoDB", host: "localhost:27017" },
+                { type: "SQLite", host: "local" }
+            ];
+            const caches = [
+                { provider: "Redis", ttl: 3600 },
+                { provider: "Memcached", ttl: 1800 },
+                { provider: "Memory", ttl: 900 }
+            ];
+            
+            const currentDB = databases.findIndex(d => d.type === store.config.services.database.type);
+            const currentCache = caches.findIndex(c => c.provider === store.config.services.cache.provider);
+            
+            store.config.services.database = databases[(currentDB + 1) % databases.length];
+            store.config.services.cache = caches[(currentCache + 1) % caches.length];
+            
+            log('Services updated', store.config.services);
+        };
+
+        // Live data controls
+        let autoUpdateInterval = null;
+        
+        document.getElementById('updateLiveData').onclick = () => {
+            store.liveData.timestamp = new Date().toLocaleString();
+            store.liveData.random = Math.floor(Math.random() * 1000);
+            store.liveData.updateCount += 1;
+            store.liveData.status = store.liveData.status === "active" ? "updating" : "active";
+            log('Live data updated', store.liveData);
+        };
+
+        document.getElementById('startAutoUpdate').onclick = () => {
+            if (!autoUpdateInterval) {
+                autoUpdateInterval = setInterval(() => {
+                    store.liveData.timestamp = new Date().toLocaleString();
+                    store.liveData.random = Math.floor(Math.random() * 1000);
+                    store.liveData.updateCount += 1;
+                }, 2000);
+                log('Auto update started');
+            }
+        };
+
+        document.getElementById('stopAutoUpdate').onclick = () => {
+            if (autoUpdateInterval) {
+                clearInterval(autoUpdateInterval);
+                autoUpdateInterval = null;
+                store.liveData.status = "stopped";
+                log('Auto update stopped');
+            }
+        };
+
+        let sectionCounter = 1;
+        document.getElementById('addNewSection').onclick = () => {
+            const sectionName = `dynamicSection${sectionCounter}`;
+            store[sectionName] = {
+                title: `Dynamic Section ${sectionCounter}`,
+                data: {
+                    created: new Date().toLocaleString(),
+                    value: Math.floor(Math.random() * 100),
+                    nested: {
+                        deep: {
+                            property: `Deep value ${sectionCounter}`
+                        }
+                    }
+                }
+            };
+            
+            // Add to DOM
+            const container = document.querySelector('.demo-grid');
+            const newSection = document.createElement('div');
+            newSection.className = 'demo-section';
+            newSection.innerHTML = `
+                <h2>🆕 ${store[sectionName].title}</h2>
+                <div class="object-viewer nested-level-1">
+                    <strong>Title:</strong> {{${sectionName}.title}}<br>
+                    <strong>Created:</strong> {{${sectionName}.data.created}}<br>
+                    <strong>Value:</strong> {{${sectionName}.data.value}}<br>
+                    <strong>Deep Property:</strong> {{${sectionName}.data.nested.deep.property}}
+                </div>
+            `;
+            container.appendChild(newSection);
+            store.__bindTemplates(newSection);
+            
+            log('Added new dynamic section', sectionName);
+            sectionCounter++;
+        };
+
+        document.getElementById('showAllData').onclick = () => {
+            log('Current store state', {
+                company: store.company.name,
+                user: store.user.personal.name,
+                product: store.catalog.featured.name,
+                app: store.config.app.name,
+                totalKeys: Object.keys(store).length
+            });
+        };
+
+        document.getElementById('clearLog').onclick = () => {
+            updateLog.innerHTML = '<div>Update log cleared...</div>';
+        };
+
+        // Initial log
+        log('Comprehensive nested object demo initialized');
+        log('Store contains keys', Object.keys(store));
+    </script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+/* GloSPA Demo Styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.version {
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
+.welcome, .demo, .state-display, .user-section, .counter-section, .nested-demo, 
+.app-controls, .user-controls {
+  background: white;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.control-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.control-buttons button {
+  background: #6f42c1;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.control-buttons button:hover {
+  background: #5a2d91;
+  transform: translateY(-1px);
+}
+
+.counter-component {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+}
+
+.counter-component h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
+.counter-component button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.counter-component button:hover {
+  background: #0056b3;
+}
+
+.user-card {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 4px solid #28a745;
+}
+
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.avatar {
+  font-size: 1.5em;
+}
+
+.role {
+  background: #6c757d;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8em;
+}
+
+.user-details {
+  margin: 1rem 0;
+}
+
+.user-details p {
+  margin: 0.5rem 0;
+  padding: 0.25rem 0.5rem;
+  background: #e9ecef;
+  border-radius: 4px;
+}
+
+.user-actions button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.user-actions button:hover {
+  background: #1e7e34;
+}
+
+.nested-values ul {
+  list-style: none;
+  padding: 0;
+}
+
+.nested-values li {
+  background: #e9ecef;
+  margin: 0.25rem 0;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid #6c757d;
+}
+
+nav {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+nav a {
+  color: #007bff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  margin: 0 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+nav a:hover {
+  background: #e9ecef;
+}
+
+.state-display ul {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.state-display li {
+  margin: 0.5rem 0;
+  font-family: 'Courier New', monospace;
+}

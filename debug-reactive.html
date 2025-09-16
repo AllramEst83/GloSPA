@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GloSPA Reactive Test</title>
+    <link rel="stylesheet" href="./assets/css/site.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .test-section {
+            background: white;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .test-buttons button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .test-buttons button:hover {
+            background: #0056b3;
+        }
+        .values-display {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 1rem 0;
+        }
+        .log-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <header>
+            <h1>GloSPA Reactive Binding Test</h1>
+            <p>Isolated test for nested object reactivity</p>
+        </header>
+        
+        <div class="test-section">
+            <h2>Basic Reactive Bindings</h2>
+            <div class="values-display">
+                <p>App Title: <strong>{{app.title}}</strong></p>
+                <p>App Version: <strong>{{app.version}}</strong></p>
+                <p>App Status: <strong>{{app.status}}</strong></p>
+            </div>
+            <div class="test-buttons">
+                <button id="testAppVersion">Update Version</button>
+                <button id="testAppTitle">Change Title</button>
+                <button id="testAppStatus">Toggle Status</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Nested Object Reactivity</h2>
+            <div class="values-display">
+                <p>User Name: <strong>{{user.name}}</strong></p>
+                <p>User Role: <strong>{{user.role}}</strong></p>
+                <p>Avatar: <strong>{{user.profile.avatar}}</strong></p>
+                <p>Theme: <strong>{{user.profile.theme}}</strong></p>
+                <p>Language: <strong>{{user.profile.preferences.language}}</strong></p>
+                <p>Notifications: <strong>{{user.profile.preferences.notifications}}</strong></p>
+            </div>
+            <div class="test-buttons">
+                <button id="testUserName">Change Name</button>
+                <button id="testUserRole">Toggle Role</button>
+                <button id="testTheme">Toggle Theme</button>
+                <button id="testLanguage">Change Language</button>
+                <button id="testNotifications">Toggle Notifications</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Counter Object</h2>
+            <div class="values-display">
+                <p>Counter Value: <strong>{{counter.value}}</strong></p>
+                <p>Counter Step: <strong>{{counter.step}}</strong></p>
+                <p>Counter Label: <strong>{{counter.label}}</strong></p>
+            </div>
+            <div class="test-buttons">
+                <button id="testCounterInc">Increment (+{{counter.step}})</button>
+                <button id="testCounterDec">Decrement (-{{counter.step}})</button>
+                <button id="testCounterStep">Change Step</button>
+                <button id="testCounterReset">Reset Counter</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Dynamic Object Addition</h2>
+            <div class="values-display" id="dynamicDisplay">
+                <p><em>Dynamic objects will appear here...</em></p>
+            </div>
+            <div class="test-buttons">
+                <button id="addNewObject">Add New Object</button>
+                <button id="addNestedObject">Add Nested Object</button>
+                <button id="clearDynamic">Clear Dynamic Objects</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Debug Console</h2>
+            <div class="log-output" id="logOutput">
+                <div>Debug console initialized...</div>
+            </div>
+            <div class="test-buttons">
+                <button id="clearLog">Clear Log</button>
+                <button id="showStore">Show Store State</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import GloSPA from './assets/provider/gloSpa.js';
+
+        // Create the reactive store
+        const store = GloSPA.createReactive({ 
+          counter: {
+            value: 0,
+            step: 1,
+            label: "Test Counter"
+          },
+          user: {
+            name: "Alice",
+            role: "admin",
+            profile: {
+              avatar: "👤",
+              theme: "dark",
+              preferences: {
+                language: "en",
+                notifications: true
+              }
+            }
+          },
+          app: {
+            title: "GloSPA Test",
+            version: "2.0",
+            status: "active"
+          }
+        });
+
+        // Log function
+        const logOutput = document.getElementById('logOutput');
+        function log(message, data = '') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.createElement('div');
+            logDiv.innerHTML = `<span style="color: #4fd1c7">[${timestamp}]</span> ${message} ${data ? JSON.stringify(data) : ''}`;
+            logOutput.appendChild(logDiv);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        // Bind templates to all test sections
+        store.__bindTemplates(document.body);
+        log('Templates bound successfully');
+
+        // App controls
+        document.getElementById('testAppVersion').onclick = () => {
+            const versions = ["2.0", "2.1", "2.2", "3.0"];
+            const current = versions.indexOf(store.app.version);
+            const next = (current + 1) % versions.length;
+            store.app.version = versions[next];
+            log('App version updated to:', store.app.version);
+        };
+
+        document.getElementById('testAppTitle').onclick = () => {
+            const titles = ["GloSPA Test", "Reactive Demo", "Nested Objects", "Template Binding"];
+            const current = titles.indexOf(store.app.title);
+            const next = (current + 1) % titles.length;
+            store.app.title = titles[next];
+            log('App title updated to:', store.app.title);
+        };
+
+        document.getElementById('testAppStatus').onclick = () => {
+            store.app.status = store.app.status === "active" ? "maintenance" : "active";
+            log('App status toggled to:', store.app.status);
+        };
+
+        // User controls
+        document.getElementById('testUserName').onclick = () => {
+            const names = ["Alice", "Bob", "Charlie", "Diana"];
+            const current = names.indexOf(store.user.name);
+            const next = (current + 1) % names.length;
+            store.user.name = names[next];
+            log('User name updated to:', store.user.name);
+        };
+
+        document.getElementById('testUserRole').onclick = () => {
+            store.user.role = store.user.role === "admin" ? "user" : "admin";
+            log('User role toggled to:', store.user.role);
+        };
+
+        document.getElementById('testTheme').onclick = () => {
+            store.user.profile.theme = store.user.profile.theme === "dark" ? "light" : "dark";
+            log('Theme toggled to:', store.user.profile.theme);
+        };
+
+        document.getElementById('testLanguage').onclick = () => {
+            const languages = ["en", "es", "fr", "de", "ja"];
+            const current = languages.indexOf(store.user.profile.preferences.language);
+            const next = (current + 1) % languages.length;
+            store.user.profile.preferences.language = languages[next];
+            log('Language updated to:', store.user.profile.preferences.language);
+        };
+
+        document.getElementById('testNotifications').onclick = () => {
+            store.user.profile.preferences.notifications = !store.user.profile.preferences.notifications;
+            log('Notifications toggled to:', store.user.profile.preferences.notifications);
+        };
+
+        // Counter controls
+        document.getElementById('testCounterInc').onclick = () => {
+            store.counter.value += store.counter.step;
+            log('Counter incremented to:', store.counter.value);
+        };
+
+        document.getElementById('testCounterDec').onclick = () => {
+            store.counter.value -= store.counter.step;
+            log('Counter decremented to:', store.counter.value);
+        };
+
+        document.getElementById('testCounterStep').onclick = () => {
+            const steps = [1, 2, 5, 10];
+            const current = steps.indexOf(store.counter.step);
+            const next = (current + 1) % steps.length;
+            store.counter.step = steps[next];
+            log('Counter step changed to:', store.counter.step);
+            // Update button text
+            document.getElementById('testCounterInc').textContent = `Increment (+${store.counter.step})`;
+            document.getElementById('testCounterDec').textContent = `Decrement (-${store.counter.step})`;
+        };
+
+        document.getElementById('testCounterReset').onclick = () => {
+            store.counter.value = 0;
+            log('Counter reset to 0');
+        };
+
+        // Dynamic object controls
+        let dynamicCounter = 1;
+        document.getElementById('addNewObject').onclick = () => {
+            const objName = `dynamic${dynamicCounter}`;
+            store[objName] = {
+                name: `Dynamic Object ${dynamicCounter}`,
+                created: new Date().toLocaleTimeString(),
+                value: Math.floor(Math.random() * 100)
+            };
+            
+            // Add to display
+            const display = document.getElementById('dynamicDisplay');
+            const newDiv = document.createElement('div');
+            newDiv.innerHTML = `
+                <p>{{${objName}.name}}: {{${objName}.value}} (created: {{${objName}.created}})</p>
+            `;
+            display.appendChild(newDiv);
+            store.__bindTemplates(newDiv);
+            
+            log('Added new object:', objName);
+            dynamicCounter++;
+        };
+
+        document.getElementById('addNestedObject').onclick = () => {
+            const objName = `nested${dynamicCounter}`;
+            store[objName] = {
+                info: {
+                    name: `Nested Object ${dynamicCounter}`,
+                    details: {
+                        created: new Date().toLocaleTimeString(),
+                        level: "deep",
+                        value: Math.floor(Math.random() * 100)
+                    }
+                }
+            };
+            
+            // Add to display
+            const display = document.getElementById('dynamicDisplay');
+            const newDiv = document.createElement('div');
+            newDiv.innerHTML = `
+                <p>{{${objName}.info.name}} (Level: {{${objName}.info.details.level}})</p>
+                <p>Value: {{${objName}.info.details.value}} | Created: {{${objName}.info.details.created}}</p>
+            `;
+            display.appendChild(newDiv);
+            store.__bindTemplates(newDiv);
+            
+            log('Added nested object:', objName);
+            dynamicCounter++;
+        };
+
+        document.getElementById('clearDynamic').onclick = () => {
+            // Remove dynamic properties
+            Object.keys(store).forEach(key => {
+                if (key.startsWith('dynamic') || key.startsWith('nested')) {
+                    delete store[key];
+                }
+            });
+            
+            // Clear display
+            const display = document.getElementById('dynamicDisplay');
+            display.innerHTML = '<p><em>Dynamic objects cleared...</em></p>';
+            
+            log('Cleared all dynamic objects');
+            dynamicCounter = 1;
+        };
+
+        // Debug controls
+        document.getElementById('clearLog').onclick = () => {
+            logOutput.innerHTML = '<div>Debug console cleared...</div>';
+        };
+
+        document.getElementById('showStore').onclick = () => {
+            log('Current store state:', {
+                app: store.app,
+                user: store.user,
+                counter: store.counter
+            });
+        };
+
+        // Initial log
+        log('Reactive test initialized');
+        log('Store created with objects:', Object.keys(store));
+    </script>
+</body>
+</html>
