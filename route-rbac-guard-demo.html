@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GloSPA RBAC Demo - Role-Based Access Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .nav {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #007cba;
+            font-weight: bold;
+        }
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        .auth-status {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .role-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .login-form {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 500px;
+        }
+        .user-selector {
+            margin: 15px 0;
+        }
+        .user-selector button {
+            margin: 5px;
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .user-selector button:hover {
+            background: #f0f0f0;
+        }
+        .user-selector button.selected {
+            background: #007cba;
+            color: white;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        .protected-content {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #c3e6cb;
+        }
+        .unauthorized-content {
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .rbac-demo {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .role-requirements {
+            background: #e2e3e5;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 GloSPA RBAC Demo</h1>
+    <p><strong>Role-Based Access Control</strong> - Different users with different permissions</p>
+    
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="#home">🏠 Home</a>
+        <a href="#dashboard">📊 Dashboard</a>
+        <a href="#users">👥 User Management</a>
+        <a href="#admin">⚙️ Admin Panel</a>
+        <a href="#reports">📈 Reports</a>
+        <a href="#billing">💳 Billing</a>
+        <a href="#login">🔑 Login</a>
+    </nav>
+
+    <!-- Auth Status -->
+    <div class="auth-status">
+        <div>
+            <strong>Current User:</strong> <span id="current-user-display">Not logged in</span>
+            <button class="logout-btn" onclick="logout()" id="logout-btn">Logout</button>
+        </div>
+        <div id="user-roles-container" style="margin-top: 8px;">
+            <strong>Roles:</strong>
+            <span id="user-roles"></span>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app"></div>
+
+    <script type="module">
+        import GloSPA from './assets/provider/gloSpa.js';
+        
+        // Predefined users with different roles
+        const DEMO_USERS = {
+            'john_admin': {
+                username: 'John Admin',
+                password: 'admin123',
+                roles: ['admin', 'user', 'manager']
+            },
+            'jane_manager': {
+                username: 'Jane Manager',
+                password: 'manager123',
+                roles: ['manager', 'user']
+            },
+            'bob_user': {
+                username: 'Bob User',
+                password: 'user123',
+                roles: ['user']
+            },
+            'alice_billing': {
+                username: 'Alice Billing',
+                password: 'billing123',
+                roles: ['billing', 'user']
+            },
+            'guest': {
+                username: 'Guest User',
+                password: 'guest123',
+                roles: []
+            }
+        };
+
+        // Create reactive state
+        const store = GloSPA.createReactive({
+            user: {
+                isLoggedIn: false,
+                username: '',
+                roles: [],
+                token: null
+            },
+            loginMessage: '',
+            selectedUser: '',
+            accessAttempts: []
+        });
+
+        // Make store globally available
+        window.store = store;
+
+        // Authentication guard function
+        async function authGuard(store, bus) {
+            return store.user.isLoggedIn;
+        }
+
+        // Role guard function - returns user's roles
+        async function roleGuard(store, bus) {
+            return store.user.roles || [];
+        }
+
+        // Define route role requirements
+        const routeRoles = {
+            'dashboard': ['user'],                    // Requires at least 'user' role
+            'users': ['manager', 'admin'],           // Requires manager or admin
+            'admin': ['admin'],                      // Requires admin role
+            'reports': ['manager', 'admin'],         // Requires manager or admin
+            'billing': ['billing', 'admin']          // Requires billing or admin role
+        };
+
+        // Login function
+        window.login = async function(userId, password) {
+            const user = DEMO_USERS[userId];
+            if (user && user.password === password) {
+                store.user.isLoggedIn = true;
+                store.user.username = user.username;
+                store.user.roles = [...user.roles];
+                store.user.token = 'fake-jwt-token-' + Date.now();
+                store.loginMessage = '';
+                store.selectedUser = '';
+                
+                // Emit login success event
+                GloSPA.bus.emit('login-success');
+                
+                return true;
+            } else {
+                store.loginMessage = 'Invalid credentials';
+                return false;
+            }
+        };
+
+        // Quick login function for demo
+        window.quickLogin = function(userId) {
+            const user = DEMO_USERS[userId];
+            if (user) {
+                store.selectedUser = userId;
+                
+                // Update input fields
+                const usernameField = document.getElementById('username');
+                const passwordField = document.getElementById('password');
+                
+                if (usernameField) usernameField.value = userId;
+                if (passwordField) passwordField.value = user.password;
+                
+                // Update button styling
+                document.querySelectorAll('.user-selector button').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                
+                const selectedBtn = document.getElementById(`btn-${userId}`);
+                if (selectedBtn) {
+                    selectedBtn.classList.add('selected');
+                }
+                
+                // Clear any previous login messages
+                store.loginMessage = '';
+                
+                // Emit update event for login page
+                GloSPA.bus.emit('login-page-update');
+            }
+        };
+
+        // Logout function
+        window.logout = function() {
+            store.user.isLoggedIn = false;
+            store.user.username = '';
+            store.user.roles = [];
+            store.user.token = null;
+            store.loginMessage = '';
+            store.selectedUser = '';
+            
+            GloSPA.navigateTo('home');
+        };
+
+        // Define routes
+        const routes = {
+            home: {
+                template: `
+                    <h2>🏠 Home Page (Public)</h2>
+                    <p>Welcome to the RBAC Demo! This page is accessible to everyone.</p>
+                    
+                    <div class="rbac-demo">
+                        <h3>🎯 RBAC Demo Features</h3>
+                        <ul>
+                            <li><strong>Role-Based Access:</strong> Different pages require different roles</li>
+                            <li><strong>Multiple Roles:</strong> Users can have multiple roles</li>
+                            <li><strong>Flexible Guards:</strong> Routes can require any role from a list</li>
+                            <li><strong>Real-time Checks:</strong> Use RBAC utilities to check permissions in components</li>
+                        </ul>
+                        
+                        <h4>📋 Available Test Users:</h4>
+                        <ul>
+                            <li><strong>John Admin:</strong> admin, manager, user (can access everything)</li>
+                            <li><strong>Jane Manager:</strong> manager, user (can't access admin panel)</li>
+                            <li><strong>Bob User:</strong> user only (limited access)</li>
+                            <li><strong>Alice Billing:</strong> billing, user (can access billing)</li>
+                            <li><strong>Guest:</strong> no roles (very limited access)</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Try it out:</strong> Login with different users and try accessing various pages to see RBAC in action!
+                    </div>
+                `
+            },
+            
+            login: {
+                template: `
+                    <h2>🔑 Login Page</h2>
+                    <div class="login-form">
+                        <h3>Choose a Demo User</h3>
+                        <div class="user-selector">
+                            <button onclick="quickLogin('john_admin')" id="btn-john_admin">
+                                👨‍💼 John Admin (admin, manager, user)
+                            </button>
+                            <button onclick="quickLogin('jane_manager')" id="btn-jane_manager">
+                                👩‍💼 Jane Manager (manager, user)
+                            </button>
+                            <button onclick="quickLogin('bob_user')" id="btn-bob_user">
+                                👤 Bob User (user)
+                            </button>
+                            <button onclick="quickLogin('alice_billing')" id="btn-alice_billing">
+                                💳 Alice Billing (billing, user)
+                            </button>
+                            <button onclick="quickLogin('guest')" id="btn-guest">
+                                👻 Guest (no roles)
+                            </button>
+                        </div>
+                        
+                        <div style="margin: 20px 0;">
+                            <input type="text" id="username" placeholder="User ID" />
+                            <input type="password" id="password" placeholder="Password (auto-filled)" />
+                            <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; margin-top: 10px;">
+                                Login
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-warning" id="login-message" style="display: none;">
+                            <span id="login-message-text"></span>
+                        </div>
+                    </div>
+                `,
+                init(store, bus) {
+                    // Update login message display
+                    function updateLoginMessage() {
+                        const messageEl = document.getElementById('login-message');
+                        const textEl = document.getElementById('login-message-text');
+                        if (store.loginMessage) {
+                            textEl.textContent = store.loginMessage;
+                            messageEl.style.display = 'block';
+                        } else {
+                            messageEl.style.display = 'none';
+                        }
+                    }
+                    
+                    // Update selected user button styling
+                    function updateSelectedUser() {
+                        // Remove selected class from all buttons
+                        document.querySelectorAll('.user-selector button').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                        
+                        // Add selected class to current user button
+                        if (store.selectedUser) {
+                            const selectedBtn = document.getElementById(`btn-${store.selectedUser}`);
+                            if (selectedBtn) {
+                                selectedBtn.classList.add('selected');
+                            }
+                        }
+                        
+                        // Update username field
+                        const usernameField = document.getElementById('username');
+                        if (usernameField) {
+                            usernameField.value = store.selectedUser;
+                        }
+                    }
+                    
+                    // Initial updates
+                    updateLoginMessage();
+                    updateSelectedUser();
+                    
+                    window.handleLogin = async function() {
+                        const username = document.getElementById('username').value;
+                        const password = document.getElementById('password').value;
+                        
+                        const success = await login(username, password);
+                        if (success) {
+                            store.loginMessage = 'Login successful! Redirecting...';
+                            setTimeout(updateLoginMessage, 50);
+                        } else {
+                            setTimeout(updateLoginMessage, 50);
+                        }
+                    };
+                    
+                    // Listen for store changes
+                    GloSPA.bus.on('login-page-update', () => {
+                        updateLoginMessage();
+                        updateSelectedUser();
+                    });
+                }
+            },
+            
+            dashboard: {
+                template: `
+                    <h2>📊 Dashboard (Requires: user role)</h2>
+                    <div class="protected-content">
+                        <h3>Welcome to your Dashboard, {{ user.username }}! 👋</h3>
+                        <p>You have successfully accessed the dashboard because you have the required 'user' role.</p>
+                        
+                        <div class="role-requirements">
+                            <strong>Required Roles:</strong> user
+                        </div>
+                        
+                        <h4>📈 Quick Stats</h4>
+                        <ul>
+                            <li>Active Projects: 12</li>
+                            <li>Pending Tasks: 8</li>
+                            <li>Team Members: 5</li>
+                        </ul>
+                    </div>
+                `
+            },
+            
+            users: {
+                template: `
+                    <h2>👥 User Management (Requires: manager OR admin)</h2>
+                    <div class="protected-content">
+                        <h3>User Management Panel</h3>
+                        <p>You can access this page because you have either 'manager' or 'admin' role.</p>
+                        
+                        <div class="role-requirements">
+                            <strong>Required Roles:</strong> manager OR admin
+                        </div>
+                        
+                        <h4>👤 User List</h4>
+                        <ul>
+                            <li>John Admin - Roles: admin, manager, user</li>
+                            <li>Jane Manager - Roles: manager, user</li>
+                            <li>Bob User - Roles: user</li>
+                            <li>Alice Billing - Roles: billing, user</li>
+                            <li>Guest - Roles: none</li>
+                        </ul>
+                    </div>
+                `
+            },
+            
+            admin: {
+                template: `
+                    <h2>⚙️ Admin Panel (Requires: admin)</h2>
+                    <div class="protected-content">
+                        <h3>System Administration</h3>
+                        <p>This is the most restricted area - only users with 'admin' role can access this.</p>
+                        
+                        <div class="role-requirements">
+                            <strong>Required Roles:</strong> admin (exclusive)
+                        </div>
+                        
+                        <h4>🔧 Admin Functions</h4>
+                        <ul>
+                            <li>🔐 System Settings</li>
+                            <li>👥 Role Management</li>
+                            <li>📊 System Analytics</li>
+                            <li>🔄 Backup & Restore</li>
+                            <li>🚨 Security Logs</li>
+                        </ul>
+                        
+                        <div class="alert alert-info">
+                            <strong>Security Note:</strong> Only John Admin can access this page in our demo.
+                        </div>
+                    </div>
+                `
+            },
+            
+            reports: {
+                template: `
+                    <h2>📈 Reports (Requires: manager OR admin)</h2>
+                    <div class="protected-content">
+                        <h3>Business Reports</h3>
+                        <p>Generate and view business reports. Available to managers and administrators.</p>
+                        
+                        <div class="role-requirements">
+                            <strong>Required Roles:</strong> manager OR admin
+                        </div>
+                        
+                        <h4>📊 Available Reports</h4>
+                        <ul>
+                            <li>📈 Sales Performance</li>
+                            <li>👥 Team Productivity</li>
+                            <li>💰 Financial Summary</li>
+                            <li>📅 Project Timeline</li>
+                        </ul>
+                    </div>
+                `
+            },
+            
+            billing: {
+                template: `
+                    <h2>💳 Billing (Requires: billing OR admin)</h2>
+                    <div class="protected-content">
+                        <h3>Billing Management</h3>
+                        <p>Handle billing and financial operations. Available to billing staff and administrators.</p>
+                        
+                        <div class="role-requirements">
+                            <strong>Required Roles:</strong> billing OR admin
+                        </div>
+                        
+                        <h4>💰 Billing Features</h4>
+                        <ul>
+                            <li>💳 Process Payments</li>
+                            <li>📄 Generate Invoices</li>
+                            <li>📊 Financial Reports</li>
+                            <li>💸 Refund Management</li>
+                        </ul>
+                        
+                        <div class="alert alert-info">
+                            <strong>Access Note:</strong> Alice Billing and John Admin can access this page.
+                        </div>
+                    </div>
+                `
+            },
+            
+            unauthorized: {
+                template: `
+                    <h2>🚫 Access Denied</h2>
+                    <div class="unauthorized-content">
+                        <h3>⛔ Insufficient Permissions</h3>
+                        <p>Sorry, you don't have the required role(s) to access that page.</p>
+                        
+                        <div style="margin: 20px 0;">
+                            <strong>Your Current Roles:</strong>
+                            <div id="current-roles-display">
+                                <span id="no-roles-message" style="font-style: italic;">No roles assigned</span>
+                            </div>
+                        </div>
+                        
+                        <p>To access different areas, you can:</p>
+                        <ul>
+                            <li>🔄 <a href="#login">Login with a different user</a> that has the required roles</li>
+                            <li>🏠 <a href="#home">Go back to the Home page</a></li>
+                            <li>📊 <a href="#dashboard">Try the Dashboard</a> (requires 'user' role)</li>
+                        </ul>
+                    </div>
+                `,
+                init(store, bus) {
+                    // Update roles display
+                    function updateRolesDisplay() {
+                        const rolesContainer = document.getElementById('current-roles-display');
+                        
+                        if (store.user.roles && store.user.roles.length > 0) {
+                            rolesContainer.innerHTML = store.user.roles.map(role => 
+                                `<span class="role-badge">${role}</span>`
+                            ).join('');
+                        } else {
+                            rolesContainer.innerHTML = '<span style="font-style: italic;">No roles assigned</span>';
+                        }
+                    }
+                    
+                    // Initial update
+                    updateRolesDisplay();
+                    
+                    // Listen for role updates
+                    GloSPA.bus.on('user-roles-updated', updateRolesDisplay);
+                }
+            }
+        };
+
+        // Initialize router with RBAC
+        GloSPA.initRouter(routes, store, {
+            authGuard: authGuard,
+            roleGuard: roleGuard,
+            routeRoles: routeRoles,
+            loginRoute: 'login',
+            unauthorizedRoute: 'unauthorized',
+            publicRoutes: ['home', 'login', 'unauthorized']
+        });
+
+        // Listen for access denied events
+        GloSPA.bus.on('access-denied', (e) => {
+            console.log('Access denied:', e.detail);
+            store.accessAttempts.push({
+                route: e.detail.route,
+                userRoles: e.detail.userRoles,
+                requiredRoles: e.detail.requiredRoles,
+                timestamp: new Date().toLocaleTimeString()
+            });
+        });
+
+        // Listen for login required events
+        GloSPA.bus.on('login-required', (e) => {
+            store.loginMessage = `Please log in to access the ${e.detail.intendedRoute} page.`;
+        });
+
+        // Bind templates
+        store.__bindTemplates();
+        
+        // Update UI elements that need manual handling
+        function updateUI() {
+            // Update current user display
+            const currentUserDisplay = document.getElementById('current-user-display');
+            if (currentUserDisplay) {
+                currentUserDisplay.textContent = store.user.isLoggedIn ? store.user.username : 'Not logged in';
+            }
+            
+            // Update logout button visibility
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.style.display = store.user.isLoggedIn ? 'inline-block' : 'none';
+            }
+            
+            // Update roles container visibility and content
+            const rolesContainer = document.getElementById('user-roles-container');
+            const rolesSpan = document.getElementById('user-roles');
+            
+            if (rolesContainer && rolesSpan) {
+                if (store.user.isLoggedIn && store.user.roles && store.user.roles.length > 0) {
+                    rolesContainer.style.display = 'block';
+                    rolesSpan.innerHTML = store.user.roles.map(role => 
+                        `<span class="role-badge">${role}</span>`
+                    ).join('');
+                } else {
+                    rolesContainer.style.display = store.user.isLoggedIn ? 'block' : 'none';
+                    rolesSpan.innerHTML = '<span style="font-style: italic;">No roles assigned</span>';
+                }
+            }
+        }
+        
+        // Watch for user state changes
+        let lastUserState = JSON.stringify(store.user);
+        let lastLoginMessage = store.loginMessage;
+        let lastSelectedUser = store.selectedUser;
+        
+        setInterval(() => {
+            const currentUserState = JSON.stringify(store.user);
+            const currentLoginMessage = store.loginMessage;
+            const currentSelectedUser = store.selectedUser;
+            
+            if (currentUserState !== lastUserState) {
+                updateUI();
+                GloSPA.bus.emit('user-roles-updated');
+                lastUserState = currentUserState;
+            }
+            
+            if (currentLoginMessage !== lastLoginMessage) {
+                GloSPA.bus.emit('login-page-update');
+                lastLoginMessage = currentLoginMessage;
+            }
+            
+            if (currentSelectedUser !== lastSelectedUser) {
+                GloSPA.bus.emit('login-page-update');
+                lastSelectedUser = currentSelectedUser;
+            }
+        }, 100);
+        
+        // Initial UI update
+        updateUI();
+        
+        console.log('🔐 RBAC Demo initialized!');
+        console.log('Available RBAC methods:', GloSPA.rbac);
+        
+        // Example of using RBAC utilities
+        window.testRBAC = async function() {
+            console.log('Testing RBAC utilities...');
+            console.log('User roles:', await GloSPA.rbac.getUserRoles());
+            console.log('Has admin role:', await GloSPA.rbac.hasRole('admin'));
+            console.log('Has manager or admin:', await GloSPA.rbac.hasAnyRole(['manager', 'admin']));
+            console.log('Can access admin page:', await GloSPA.rbac.canAccess('admin'));
+        };
+    </script>
+</body>
+</html>

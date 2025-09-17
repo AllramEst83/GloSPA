@@ -232,24 +232,116 @@ const GloSPA = (() => {
   }
 
   /**
-   * Single Page Application router with hash-based navigation and lazy loading
+   * Single Page Application router with hash-based navigation, lazy loading, route guards, and RBAC
    * Supports both static page objects and dynamic import functions for code splitting
    * @param {Object} routes - Map of route names to page components or import functions
    * @param {Proxy} store - Reactive state store to pass to pages
+   * @param {Object} options - Router configuration options
+   * @param {Function} options.authGuard - Function that returns true if user is authenticated
+   * @param {Function} options.roleGuard - Function that returns user roles array
+   * @param {Object} options.routeRoles - Map of route names to required roles
+   * @param {string} options.loginRoute - Route to redirect to when authentication fails (default: "login")
+   * @param {string} options.unauthorizedRoute - Route to redirect to when role access fails (default: "unauthorized")
+   * @param {Array} options.publicRoutes - Routes that don't require authentication (default: ["login", "home"])
    */
-  async function initRouter(routes, store) {
+  async function initRouter(routes, store, options = {}) {
+    const {
+      authGuard = () => true, // Default: no authentication required
+      roleGuard = () => [], // Default: returns empty roles array
+      routeRoles = {}, // Default: no role requirements
+      loginRoute = "login",
+      unauthorizedRoute = "unauthorized",
+      publicRoutes = ["login", "home", "unauthorized"]
+    } = options;
+
+    /**
+     * Check if a route requires authentication
+     * @param {string} routeName - Name of the route to check
+     * @returns {boolean} - True if route requires authentication
+     */
+    function requiresAuth(routeName) {
+      return !publicRoutes.includes(routeName);
+    }
+
+    /**
+     * Check if user has required roles for a route
+     * @param {string} routeName - Name of the route to check
+     * @param {Array} userRoles - Array of user's roles
+     * @returns {boolean} - True if user has required roles
+     */
+    function hasRequiredRoles(routeName, userRoles) {
+      const requiredRoles = routeRoles[routeName];
+      
+      // If no roles are required for this route, allow access
+      if (!requiredRoles || requiredRoles.length === 0) {
+        return true;
+      }
+      
+      // Check if user has at least one of the required roles
+      return requiredRoles.some(role => userRoles.includes(role));
+    }
+
+    /**
+     * Handle route guard logic with authentication and RBAC
+     * @param {string} requestedRoute - The route user is trying to access
+     * @returns {string} - The route to actually load (might be redirected)
+     */
+    async function checkRouteGuard(requestedRoute) {
+      // If route doesn't require auth, allow access
+      if (!requiresAuth(requestedRoute)) {
+        return requestedRoute;
+      }
+
+      // Check authentication first
+      const isAuthenticated = await authGuard(store, GloSPA.bus);
+      
+      if (!isAuthenticated) {
+        // Store the intended route for redirect after login
+        store.__intendedRoute = requestedRoute;
+        // Emit event for login required
+        GloSPA.bus.emit('login-required', { intendedRoute: requestedRoute });
+        // Redirect to login
+        return loginRoute;
+      }
+
+      // Get user roles and check RBAC
+      const userRoles = await roleGuard(store, GloSPA.bus);
+      
+      if (!hasRequiredRoles(requestedRoute, userRoles)) {
+        // Emit event for insufficient permissions
+        GloSPA.bus.emit('access-denied', { 
+          route: requestedRoute, 
+          userRoles, 
+          requiredRoles: routeRoles[requestedRoute] 
+        });
+        // Redirect to unauthorized page
+        return unauthorizedRoute;
+      }
+
+      return requestedRoute;
+    }
+
     /**
      * Load and render the current route based on URL hash
-     * Handles lazy loading, loading states, and page initialization
+     * Handles lazy loading, loading states, route guards, and page initialization
      */
     async function loadRoute() {
       // Get current route from URL hash, default to "home"
-      const path = location.hash.slice(1) || "home";
+      const requestedPath = location.hash.slice(1) || "home";
+      
+      // Apply route guards
+      const path = await checkRouteGuard(requestedPath);
+      
+      // Update URL if redirected (but don't trigger another hashchange)
+      if (path !== requestedPath) {
+        history.replaceState(null, null, `#${path}`);
+      }
+
       let comp = routes[path];
 
       // Show 404 if route not found
       if (!comp) {
-        document.getElementById("app").innerHTML = "<h1>404</h1>";
+        document.getElementById("app").innerHTML = "<h1>404 - Page Not Found</h1>";
         return;
       }
 
@@ -273,10 +365,96 @@ const GloSPA = (() => {
       if (comp.init) {
         await comp.init(store, GloSPA.bus);
       }
+
+      // Emit route loaded event
+      GloSPA.bus.emit('route-loaded', { route: path, wasRedirected: path !== requestedPath });
+    }
+
+    /**
+     * Navigate to a specific route programmatically
+     * @param {string} route - Route name to navigate to
+     */
+    function navigateTo(route) {
+      location.hash = route;
+    }
+
+    /**
+     * Navigate to the intended route (used after successful login)
+     */
+    function navigateToIntended() {
+      const intended = store.__intendedRoute;
+      if (intended) {
+        delete store.__intendedRoute;
+        navigateTo(intended);
+      }
     }
 
     // Listen for hash changes to handle navigation
     window.addEventListener("hashchange", loadRoute);
+    
+    // Listen for successful login to redirect to intended route
+    GloSPA.bus.on('login-success', navigateToIntended);
+
+    // Expose navigation functions
+    GloSPA.navigateTo = navigateTo;
+    GloSPA.navigateToIntended = navigateToIntended;
+    
+    // Expose RBAC utility functions
+    GloSPA.rbac = {
+      /**
+       * Check if user has a specific role
+       * @param {string} role - Role to check
+       * @returns {Promise<boolean>} - True if user has the role
+       */
+      hasRole: async (role) => {
+        const userRoles = await roleGuard(store, GloSPA.bus);
+        return userRoles.includes(role);
+      },
+      
+      /**
+       * Check if user has any of the specified roles
+       * @param {Array} roles - Array of roles to check
+       * @returns {Promise<boolean>} - True if user has at least one role
+       */
+      hasAnyRole: async (roles) => {
+        const userRoles = await roleGuard(store, GloSPA.bus);
+        return roles.some(role => userRoles.includes(role));
+      },
+      
+      /**
+       * Check if user has all of the specified roles
+       * @param {Array} roles - Array of roles to check
+       * @returns {Promise<boolean>} - True if user has all roles
+       */
+      hasAllRoles: async (roles) => {
+        const userRoles = await roleGuard(store, GloSPA.bus);
+        return roles.every(role => userRoles.includes(role));
+      },
+      
+      /**
+       * Check if user can access a specific route
+       * @param {string} routeName - Route to check access for
+       * @returns {Promise<boolean>} - True if user can access the route
+       */
+      canAccess: async (routeName) => {
+        if (!requiresAuth(routeName)) return true;
+        
+        const isAuthenticated = await authGuard(store, GloSPA.bus);
+        if (!isAuthenticated) return false;
+        
+        const userRoles = await roleGuard(store, GloSPA.bus);
+        return hasRequiredRoles(routeName, userRoles);
+      },
+      
+      /**
+       * Get current user roles
+       * @returns {Promise<Array>} - Array of user roles
+       */
+      getUserRoles: async () => {
+        return await roleGuard(store, GloSPA.bus);
+      }
+    };
+    
     // Load initial route
     loadRoute();
   }
@@ -299,7 +477,15 @@ const GloSPA = (() => {
     registerComponent,
     
     // Check if a component is registered (useful for conditional rendering)
-    hasComponent: (name) => !!components[name]
+    hasComponent: (name) => !!components[name],
+    
+    // RBAC utility functions (will be populated by initRouter)
+    rbac: {
+      hasRole: null,
+      hasAnyRole: null,
+      hasAllRoles: null,
+      canAccess: null
+    }
   };
 })();
 
