@@ -93,8 +93,9 @@ GloSPA/
 │   ├── AboutPage.js
 │   └── HomePage.js
 ├── cdn-test.html                # CDN usage test
-├── route-guards-demo.html       # Route guards demo
-└── rbac-demo.html              # RBAC demo with multiple users
+├── test-nested.html             # Nested reactive state test
+├── debug-reactive.html          # Debugging reactive state test
+└── route-rbac-guard-demo        # RBAC demo with multiple users
 ```
 └── pages/             # Page components
     ├── AboutPage.js
