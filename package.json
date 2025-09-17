@@ -1,6 +1,6 @@
 {
   "name": "glospa",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightweight Single Page Application (SPA) framework - Glorified Single Page Application",
   "main": "assets/provider/gloSpa.js",
   "module": "assets/provider/gloSpa.js",
